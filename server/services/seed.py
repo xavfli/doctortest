@@ -83,8 +83,10 @@ def seed(db: Session) -> dict:
         db.add(exam)
         db.flush()
         created["exams"] += 1
-        # Attach every active question that has an answer key.
-        for position, qid in enumerate(_gradable_ids(db)):
+        # Attach every active question, keyed or not: the block count is a slice
+        # of this list, so linking only the gradable ones would hide most of the
+        # bank behind a much smaller number of blocks.
+        for position, qid in enumerate(_active_ids(db)):
             db.add(
                 ExamQuestion(exam_id=exam.id, question_id=qid, position=position)
             )
@@ -93,50 +95,77 @@ def seed(db: Session) -> dict:
     return created
 
 
-def _gradable_ids(db: Session) -> list[int]:
-    """Ids of every active question that can actually be graded.
+def _active_ids(db: Session) -> list[int]:
+    """Ids of every active question, in stable bank order.
 
-    A question is gradable with either a chosen option (``answer_index``) or the
-    "barcha javoblar to'g'ri" flag (``answer_all``). Filtering on
-    ``answer_index`` alone silently dropped the ``answer_all`` questions, so they
-    never reached the exam and could never be asked. `exam_engine` already
-    counts both, and this must agree with it.
+    The exam must link *all* active questions, not only the gradable ones.
+    Blocks are a slice of this list, so linking only the gradable questions
+    capped a 1005-question bank at ceil(456/20) = 23 blocks. A question without
+    an answer key is still asked and shown; `grade_attempt` leaves it out of the
+    `gradable` denominator, so it can never cost the student a mark.
     """
     return list(
         db.scalars(
             select(Question.id)
-            .where(
-                Question.is_active.is_(True),
-                or_(
-                    Question.answer_index.is_not(None),
-                    Question.answer_all.is_(True),
-                ),
-            )
-            .order_by(Question.source_id)
+            .where(Question.is_active.is_(True))
+            .order_by(Question.source_id, Question.id)
         ).all()
     )
 
 
 def attach_questions_to_starter_exam(db: Session) -> dict:
-    """Fill the starter exam with every active, gradable question.
+    """Fill the starter exam with every active question.
 
-    Called after a bulk import so a fresh database ends up with a usable exam.
+    Called after a bulk import so a fresh database ends up with a usable exam,
+    and on every start so questions imported later also join it. Questions that
+    are linked but no longer active are removed, which keeps the block count
+    honest instead of leaving empty slots at the end of the bank.
     """
-    gradable = _gradable_ids(db)
+    active = _active_ids(db)
     exam = db.scalar(select(Exam).order_by(Exam.id).limit(1))
-    if exam is None or not gradable:
-        return {"exam_id": exam.id if exam else None, "attached": 0}
-    existing = set(
-        db.scalars(select(ExamQuestion.question_id).where(ExamQuestion.exam_id == exam.id)).all()
+    if exam is None:
+        return {"exam_id": None, "attached": 0, "total": len(active)}
+    if not active:
+        return {"exam_id": exam.id, "attached": 0, "total": 0}
+
+    existing = list(
+        db.scalars(select(ExamQuestion).where(ExamQuestion.exam_id == exam.id)).all()
     )
+    linked = {eq.question_id: eq for eq in existing}
+    wanted = set(active)
+
+    removed = [eq for eq in existing if eq.question_id not in wanted]
+    for eq in removed:
+        db.delete(eq)
     added = 0
-    for qid in gradable:
-        if qid in existing:
+    for qid in active:
+        if qid in linked:
             continue
-        db.add(ExamQuestion(exam_id=exam.id, question_id=qid, position=added))
+        db.add(ExamQuestion(exam_id=exam.id, question_id=qid, position=0))
         added += 1
+
+    # Renumber from scratch: positions define the block slices, so they must be
+    # contiguous from 0 after a removal or an append.
+    kept = [eq for eq in existing if eq.question_id in wanted]
+    for position, eq in enumerate(kept):
+        eq.position = position
     db.flush()
-    return {"exam_id": exam.id, "attached": added, "total": len(gradable)}
+    for position, eq in enumerate(
+        db.scalars(
+            select(ExamQuestion)
+            .where(ExamQuestion.exam_id == exam.id)
+            .order_by(ExamQuestion.question_id)
+        ).all()
+    ):
+        eq.position = position
+    db.flush()
+
+    return {
+        "exam_id": exam.id,
+        "attached": added,
+        "removed": len(removed),
+        "total": len(active),
+    }
 
 
 def import_dataset(db: Session, user: User | None = None) -> dict | None:
@@ -177,10 +206,16 @@ def import_dataset(db: Session, user: User | None = None) -> dict | None:
 
 
 def seed_if_empty() -> dict | None:
-    """Prepare the database on first run: accounts, settings and questions.
+    """Prepare the database on start: accounts, settings and questions.
 
     Idempotent: accounts and settings are created only when missing, and the
     question bank is (re)loaded whenever it is still empty.
+
+    The exam is re-synced on every start, not only on first run. A database that
+    was seeded by an older version keeps whatever it was linked to, and the block
+    count the student sees is simply that linked count divided by 20 — so without
+    this a stale link stays wrong forever, and no code change would ever reach
+    the deployed instance.
     """
     with session_scope() as db:
         created: dict[str, object] = {}
@@ -190,4 +225,7 @@ def seed_if_empty() -> dict | None:
             result = import_dataset(db)
             if result:
                 created["questions"] = result
+        sync = attach_questions_to_starter_exam(db)
+        if sync["attached"] or sync["removed"]:
+            created["exam_sync"] = sync
         return created or None

@@ -23,6 +23,11 @@ tomonidan avtomatik generatsiya qilinadi. `DEFAULT_ADMIN_EMAIL` va
 
 Bo‘sh server birinchi ishga tushganda avtomatik ravishda to‘ldiriladi:
 **1005 savol**, starter imtihon va 2 ta hisob (`build/questions.json` dan).
+Imtihonga **barcha faol savollar** bog‘lanadi, shuning uchun o‘quvchi
+**51 ta bo‘lim**ni ko‘radi (har birida 20 savol). Bloklar soni
+`ceil(bog‘langan savollar / 20)` hisobidan kelib chiqadi — agar faqat javobi
+bor savollar bog‘lansa, 1005 savol atigi **23 bo‘lim**ga sig‘ib qoladi. Shu
+sababli exam har bir ishga tushganda avtomatik sinxronlanadi.
 
 > [!WARNING]
 > Render **bepul** rejasida disk vaqtinchadir: `/app/data/app.db` har bir
@@ -322,6 +327,7 @@ python tools/import_answers.py --dry-run   # avval rejalashtirishni ko‘rish
 python tools/import_answers.py             # qo‘llash
 python tools/answer_coverage.py            # qaysi savollar hali javobsiz
 python tools/check_grading.py              # baholash to‘g‘riligini tekshirish
+python tools/check_block_coverage.py       # yangi bazada 51 blok borligini tekshirish
 python tools/check_page_signatures.py      # sahifa parametrlari routerga mosmi
 ```
 
