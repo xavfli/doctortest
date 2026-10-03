@@ -1,0 +1,22 @@
+# Netlify is NOT a valid host for this project and this file exists to stop a
+# broken deploy rather than to configure one.
+#
+# The app is a FastAPI server: it grades answers server-side (so the correct
+# option never reaches the browser) and stores results in SQLite. Netlify only
+# serves static files, so the API is absent and the site answers "Page not
+# found" for /api/* and never renders the exam.
+#
+# Host it with the Dockerfile instead — see render.yaml for a one-click
+# Render service. Nothing here should be removed unless the project is replaced
+# by a static-only frontend.
+
+[build]
+  publish = "."
+
+[[redirects]]
+  # Any attempt to serve the repository root lands on an explanation instead of
+  # a confusing Netlify 404.
+  from = "/*"
+  to = "/netlify-unavailable.html"
+  status = 200
+  force = true

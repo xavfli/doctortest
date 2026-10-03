@@ -72,8 +72,10 @@ def list_questions(
         stmt = stmt.where(Question.is_active == is_active)
         count_stmt = count_stmt.where(Question.is_active == is_active)
     if gradable is True:
-        stmt = stmt.where(Question.answer_index.is_not(None))
-        count_stmt = count_stmt.where(Question.answer_index.is_not(None))
+        # "Gradable" means answer_index is set OR the "barcha javoblar to'g'ri"
+        # flag is set — the same rule the exam engine and the seeder use.
+        stmt = stmt.where(or_(Question.answer_index.is_not(None), Question.answer_all.is_(True)))
+        count_stmt = count_stmt.where(or_(Question.answer_index.is_not(None), Question.answer_all.is_(True)))
     total = int(db.scalar(count_stmt) or 0)
     rows = db.scalars(
         stmt.order_by(Question.source_id).offset((page - 1) * per_page).limit(per_page)

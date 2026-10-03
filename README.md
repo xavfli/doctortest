@@ -1,5 +1,35 @@
 # Oilaviy shifokorlik testi — full-stack platforma
 
+> [!IMPORTANT]
+> **Bu sayt statik emas — Python server ilovasi.** Test bahosi **serverda**
+> qo‘yiladi (to‘g‘ri javob brauzerga umuman yuborilmaydi) va natijalar
+> bazada saqlanadi. Shuning uchun **Netlify, Vercel, GitHub Pages kabi statik
+> hosting ishlamaydi** — ular faqat HTML/JS beradi, `/api` so‘rovi 404 qaytaradi.
+> Joylashtirish uchun `Dockerfile`dan foydalaning: **Render**, **Railway** yoki
+> `docker compose` bilan o‘z serveringiz (qarang: *Serverga yukash*).
+
+## Render.com’ga bir bosishda (eng oson)
+
+Repozitoriyda `render.yaml` tayyor:
+
+1. [dashboard.render.com](https://dashboard.render.com) → **New → Web Service**
+2. Repozitoriyni ulang: `https://github.com/xavfli/doctortest`
+3. Render `Dockerfile`ni avtomatik topadi — boshqa maydonlarni o‘zgartirmang
+4. **Create Web Service**
+
+`SECRET_KEY`, `DEFAULT_ADMIN_PASSWORD` va `DEFAULT_TEACHER_PASSWORD` Render
+tomonidan avtomatik generatsiya qilinadi. `DEFAULT_ADMIN_EMAIL` va
+`DEFAULT_TEACHER_EMAIL` ni dashboard’da o‘zingiznikiga o‘zgartiring.
+
+Bo‘sh server birinchi ishga tushganda avtomatik ravishda to‘ldiriladi:
+**1005 savol**, starter imtihon va 2 ta hisob (`build/questions.json` dan).
+
+> [!WARNING]
+> Render **bepul** rejasida disk vaqtinchadir: `/app/data/app.db` har bir
+> qayta joylashtirishda to‘g‘riladi. Haqiqiy natijalarni saqlash uchun
+> **persistent disk** ulang (`/app/data`) yoki `DB_URL` ni **Postgres**’ga
+> o‘zgartiring.
+
 Oilaviy shifokorlik mutaxassisligi testi: **backend** (FastAPI + SQLAlchemy +
 SQLite) va **frontend** (ikki SPA — o‘quvchi sayti va admin panel). 1005 ta
 savol bazaga yuklanadi, har bir urinishda 20 ta savol beriladi, baholash serverda

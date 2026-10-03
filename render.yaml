@@ -1,0 +1,51 @@
+# This project is a Python server application (FastAPI + SQLAlchemy), not a
+# static site: grading runs on the server so the correct answer never reaches
+# the browser, and results live in SQLite. A static host such as Netlify cannot
+# serve it — there is no backend to run the API, so every /api call 404s.
+#
+# Render builds this Dockerfile and runs the container as a web service:
+#   Dashboard -> New -> Web Service -> connect this repo -> Runtime: Docker
+# The blueprint below does the same thing from the repository itself, so Render
+# can create the service without any manual fields.
+#
+# envVars marked sync:false are placeholders. Set the real values in the Render
+# dashboard; the app logs a loud warning at startup if they are left at the
+# unsafe defaults.
+
+services:
+  - type: web
+    name: osh-test
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    # Free instances sleep after inactivity and spin up again on the next
+    # request; a paid instance stays warm.
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEFAULT_ADMIN_EMAIL
+        sync: false
+      - key: DEFAULT_ADMIN_PASSWORD
+        generateValue: true
+      - key: DEFAULT_TEACHER_EMAIL
+        sync: false
+      - key: DEFAULT_TEACHER_PASSWORD
+        generateValue: true
+      # The frontend is served by the same FastAPI process, so no cross-origin
+      # requests are made and the list stays empty.
+      - key: CORS_ORIGINS
+        value: ""
+      - key: ALLOW_REGISTRATION
+        value: "true"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "720"
+      # SQLite lives on the container filesystem. On a free instance that disk
+      # is ephemeral, so this database resets on every redeploy. Attach a
+      # persistent disk mounted at /app/data, or switch DB_URL to Postgres,
+      # before storing real results.
+      - key: DB_PATH
+        value: /app/data/app.db

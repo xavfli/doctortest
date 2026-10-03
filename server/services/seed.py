@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from server.core.config import settings
@@ -84,12 +84,7 @@ def seed(db: Session) -> dict:
         db.flush()
         created["exams"] += 1
         # Attach every active question that has an answer key.
-        gradable = db.scalars(
-            select(Question.id)
-            .where(Question.is_active.is_(True), Question.answer_index.is_not(None))
-            .order_by(Question.source_id)
-        ).all()
-        for position, qid in enumerate(gradable):
+        for position, qid in enumerate(_gradable_ids(db)):
             db.add(
                 ExamQuestion(exam_id=exam.id, question_id=qid, position=position)
             )
@@ -98,16 +93,36 @@ def seed(db: Session) -> dict:
     return created
 
 
+def _gradable_ids(db: Session) -> list[int]:
+    """Ids of every active question that can actually be graded.
+
+    A question is gradable with either a chosen option (``answer_index``) or the
+    "barcha javoblar to'g'ri" flag (``answer_all``). Filtering on
+    ``answer_index`` alone silently dropped the ``answer_all`` questions, so they
+    never reached the exam and could never be asked. `exam_engine` already
+    counts both, and this must agree with it.
+    """
+    return list(
+        db.scalars(
+            select(Question.id)
+            .where(
+                Question.is_active.is_(True),
+                or_(
+                    Question.answer_index.is_not(None),
+                    Question.answer_all.is_(True),
+                ),
+            )
+            .order_by(Question.source_id)
+        ).all()
+    )
+
+
 def attach_questions_to_starter_exam(db: Session) -> dict:
     """Fill the starter exam with every active, gradable question.
 
     Called after a bulk import so a fresh database ends up with a usable exam.
     """
-    gradable = db.scalars(
-        select(Question.id)
-        .where(Question.is_active.is_(True), Question.answer_index.is_not(None))
-        .order_by(Question.source_id)
-    ).all()
+    gradable = _gradable_ids(db)
     exam = db.scalar(select(Exam).order_by(Exam.id).limit(1))
     if exam is None or not gradable:
         return {"exam_id": exam.id if exam else None, "attached": 0}
