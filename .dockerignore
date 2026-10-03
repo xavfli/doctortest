@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+data
+build/*.js
+__pycache__
+*.pyc
+*.log
+README.md
+start.bat
+tests
+deploy/certs

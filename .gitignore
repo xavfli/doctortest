@@ -1,0 +1,28 @@
+# Secrets and local configuration
+.env
+
+# Runtime data (SQLite database and logs)
+# The plain name covers app.db and its SQLite sidecars; the wildcard also covers
+# the app.db.bak-* snapshots, which hold real user emails, password hashes and
+# attempt history and must never reach a public repository.
+data/*.db
+data/*.db-*
+data/*.bak
+data/*.bak-*
+
+# Logs (runtime only, regenerated on every run). `*.err` is here too: the
+# Windows start script writes uvicorn's output to data/uvicorn.err.
+*.log
+*.err
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

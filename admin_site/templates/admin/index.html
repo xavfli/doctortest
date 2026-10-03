@@ -1,0 +1,36 @@
+{% extends "admin/base_site.html" %}
+{% comment %}
+Overrides Unfold's admin/index.html to show our summary cards. The context is
+populated by DASHBOARD_CALLBACK in admin_site/users/admin.py, which is the only
+dashboard hook Unfold >=0.60 still supports (the old "DASHBOARD" template key
+was removed).
+
+This comment sits *after* extends on purpose: Django requires extends to be the
+first tag in the template, and {# #} is single-line only, so a multi-line note
+has to use comment/endcomment anyway.
+{% endcomment %}
+
+{% block content %}
+  <div class="osh-dash">
+    <p class="osh-dash-sub">Savol banki, imtihonlar va foydalanuvchilar boshqaruvi.</p>
+
+    <div class="osh-stats">
+      {% for item in stats %}
+        <div class="osh-stat">
+          <span class="osh-stat-value">{{ item.value }}</span>
+          <span class="osh-stat-label">{{ item.label }}</span>
+          {% if item.hint %}<span class="osh-stat-hint">{{ item.hint }}</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="osh-actions">
+      {% for label, url_name in osh_quick_links %}
+        <a class="osh-btn{% if forloop.first %} primary{% endif %}" href="{% url url_name %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# Recent activity and the model shortcuts Unfold ships with. #}
+  {% include "unfold/helpers/dashboard_default.html" %}
+{% endblock %}

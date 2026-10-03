@@ -1,0 +1,45 @@
+{% extends "unfold/layouts/unauthenticated.html" %}
+{% load static %}
+
+{% block title %}Boshqaruv paneliga kirish{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin_custom.css' %}">
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} osh-login{% endblock %}
+
+{% block content %}
+  <div class="osh-login-card">
+    <h1>Boshqaruv paneli</h1>
+    <p class="osh-login-sub">Tizimga kiring. Parol o‘quvchi saytidagi bilan bir xil.</p>
+
+    {% if form.errors %}
+      <div class="osh-login-error">E-pochta yoki parol noto‘g‘ri.</div>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
+      <div class="osh-field">
+        <label for="id_username">E-pochta</label>
+        <input type="email" name="username" id="id_username" autocomplete="username"
+               autofocus required value="{{ form.username.value|default:'' }}">
+      </div>
+      <div class="osh-field">
+        <label for="id_password">Parol</label>
+        <input type="password" name="password" id="id_password"
+               autocomplete="current-password" required>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="osh-submit">Kirish</button>
+    </form>
+  </div>
+{% endblock %}
+
+{# The way back to the student site, shown on the login screen too. #}
+{% block login_after %}
+  <a href="{{ student_site }}" class="osh-back-top osh-back-login">
+    <span class="osh-back-arrow">←</span> O‘quvchi saytiga qaytish
+  </a>
+{% endblock %}

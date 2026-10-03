@@ -1,0 +1,46 @@
+services:
+  app:
+    build: .
+    container_name: osh-test
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+      DB_PATH: /app/data/app.db
+    volumes:
+      - ./data:/app/data
+    # Bind to loopback only: nginx (or an SSH tunnel) is the public entry point.
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status == 200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  # Reverse proxy: terminates HTTPS and serves the domain name.
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: osh-nginx
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx.https.conf.template:/etc/nginx/templates/site.conf.template:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    # The official nginx image substitutes ${SERVER_NAME} into the template and
+    # writes /etc/nginx/conf.d/default.conf; HTTP-only config is used until a
+    # certificate is present.
+    environment:
+      SERVER_NAME: ${DOMAIN:-localhost}

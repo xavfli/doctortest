@@ -1,0 +1,38 @@
+"""Model package: re-exports every entity and constant used across the app."""
+from server.models.entities import (  # noqa: F401
+    ROLES,
+    ROLE_ADMIN,
+    ROLE_STUDENT,
+    ROLE_TEACHER,
+    STATUS_EXPIRED,
+    STATUS_IN_PROGRESS,
+    STATUS_SUBMITTED,
+    Answer,
+    AppSetting,
+    Attempt,
+    AuditLog,
+    Exam,
+    ExamQuestion,
+    Question,
+    User,
+    utcnow,
+)
+
+__all__ = [
+    "Answer",
+    "AppSetting",
+    "Attempt",
+    "AuditLog",
+    "Exam",
+    "ExamQuestion",
+    "Question",
+    "User",
+    "ROLES",
+    "ROLE_ADMIN",
+    "ROLE_TEACHER",
+    "ROLE_STUDENT",
+    "STATUS_IN_PROGRESS",
+    "STATUS_SUBMITTED",
+    "STATUS_EXPIRED",
+    "utcnow",
+]

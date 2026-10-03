@@ -1,0 +1,17 @@
+# Production/runtime dependencies for the OSH test platform.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+SQLAlchemy==2.0.49
+pydantic==2.12.5
+greenlet==3.4.0
+
+# Django Unfold admin panel (admin_site/). Pinned because the panel overrides
+# Unfold templates whose block names changed across releases.
+Django==6.1.1
+django-unfold==0.108.0
+asgiref==3.12.1
+sqlparse==0.5.3
+tzdata==2025.2
+# Serves /static without a separate web server, so the panel stays styled
+# whether DEBUG is on or off.
+whitenoise==6.8.2
