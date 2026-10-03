@@ -391,7 +391,6 @@ Javoblar tibbiy adabiyotdan olingan. Bu tizim tibbiy tavsiya berish uchun
 mo‘ljallanmagan; tashxis va davolash qarorlari faqat malakali shifokor tomonidan,
 klinik ko‘rikuv asosida qabul qilinadi.
 
-```
   schemas/              Pydantic so‘rov/javob modellari
   api/                  routes_auth, routes_users, routes_questions,
                         routes_exams, routes_attempts, routes_admin, deps
